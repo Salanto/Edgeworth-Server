@@ -74,6 +74,11 @@ private:
      QTcpSocket* m_socket;
 
      /**
+      * @brief Sends heartbeat signal to the AIO masterserver.
+      */
+     QTimer* m_heartbeat;
+
+     /**
       * @brief m_server_name
       */
      QString m_server_name;
