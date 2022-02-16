@@ -12,7 +12,14 @@ MasterClientPlugin::MasterClientPlugin()
 
 void MasterClientPlugin::connectMasterserver(QString f_hostname, int f_port)
 {
-
+    m_socket->connectToHost(f_hostname,f_port,QIODevice::ReadWrite);
+    m_socket->waitForConnected(1000);
+    if (!(m_socket->ConnectedState == QAbstractSocket::ConnectedState))
+    {
+        qCritical() << tr("Unable to connect to masterserver.");
+        emit MasterserverDisconnected();
+        return;
+    }
 }
 
 void MasterClientPlugin::disconnectMasterserver()
@@ -29,14 +36,17 @@ void MasterClientPlugin::publishServer()
 }
 
 void MasterClientPlugin::sendHeartbeat()
-{
+{   
     QStringList l_data;
     l_data << "KEEPALIVE";
+    m_socket->write(escapePacket(l_data));
 }
 
 void MasterClientPlugin::requestNews()
 {
-
+    QStringList l_data;
+    l_data << "NEWS";
+    m_socket->write(escapePacket(l_data));
 }
 
 void MasterClientPlugin::setAdvertiserConfiguration(const QString &f_server_name, const QString &f_server_description, int f_server_port)
@@ -103,11 +113,14 @@ void MasterClientPlugin::handlePacket(const QStringList& f_packet)
             if (f_packet.at(1) == "13") {
                 emit serverPublished();
                 m_heartbeat->start(1000 * 25);
-                break;
             }
+            break;
 
-            if (f_packet.at(1) == "KEEPALIVE")
+            if (f_packet.at(1) == "KEEPALIVE") {
                 emit heartbeatSuccess();
+                m_heartbeat->start();
+            }
+            break;
 
         case MS_ERROR :
             if (f_packet.size() >= 3) {
